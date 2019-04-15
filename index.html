@@ -14,9 +14,10 @@
     <body>
 
         <div class="canvas">
-            <svg width="600" height="600">
+            <!-- Create the svg in html -->
+            <!-- <svg width="600" height="600">
                 <rect></rect>
-            </svg>
+            </svg> -->
         </div>
 
         <!-- face -->
@@ -25,6 +26,23 @@
         <!--[if lt IE 7]>
             <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
+
+
+<script src="https://www.gstatic.com/firebasejs/5.9.4/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/5.9.4/firebase-firestore.js"></script>
+<script>
+  // Initialize Firebase
+  var config = {
+    apiKey: "AIzaSyCS1DMT9ZnywgrV2Mlr4PbkIPMEtuwtuPQ",
+    authDomain: "d3-data-visualization-demo.firebaseapp.com",
+    databaseURL: "https://d3-data-visualization-demo.firebaseio.com",
+    projectId: "d3-data-visualization-demo",
+    storageBucket: "d3-data-visualization-demo.appspot.com",
+    messagingSenderId: "672950516237"
+  };
+  firebase.initializeApp(config);
+  const db = firebase.firestore();
+</script>
         
         <!-- <script src="" async defer></script> -->
         <script src="https://d3js.org/d3.v5.min.js"></script>
