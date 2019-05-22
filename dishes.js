@@ -1,4 +1,5 @@
 class Dishes {
+    // Class level variables
     svg;
     graph;
     containerDimensions = { height: 600, width: 600 };
@@ -10,20 +11,26 @@ class Dishes {
         width: this.containerDimensions.width - this.margin.left - this.margin.right,
         height: this.containerDimensions.height - this.margin.top - this.margin.bottom,
     };
-
     y;
     x;
     range;
     xAxisGroup;
     yAxisGroup
 
-    applyMenuAttributes(rects, y, x, graphHeight) {
-        return rects.attr('width', 50)
-            .attr('height', d => graphHeight - y(d.orders)) // Set the height to be the number of orders per menu item
-            .attr('width', x.bandwidth) // Pass the band scale bandwidth function to use for determining width
-            .attr('fill', 'orange')
+    applyMenuAttributes(rects, y, x, graphHeight, newBars = true) {
+        rects = rects.attr('width', 50)
+                     .attr('width', x.bandwidth) // Pass the band scale bandwidth function to use for determining width
+                     .attr('fill', 'orange')
+                     .attr('x', d => x(d.name)) // Position each item 70 pixels from the last -- temp solution
+        if (newBars) {
+            rects = rects.attr('height', 0)
+                         .attr('y', graphHeight)
+        }
+        return rects.transition().duration(500)
+            // Transition to the settings below
             .attr('y', d => y(d.orders))
-            .attr('x', d => x(d.name)); // Position each item 70 pixels from the last -- temp solution
+            .attr('height', d => graphHeight - y(d.orders)) // Set the height to be the number of orders per menu item
+        ; 
     }
 
     applyDimensions(element, dimensions = {height: 1000, width: 1000}) {
@@ -63,7 +70,7 @@ class Dishes {
 
         
         db.collection('dishes').onSnapshot(dishesSnap => {
-            this.buildGraph(dishesSnap.docs.map(d => d.data()));
+            this.buildGraph(dishesSnap.docs.map(d => ({ ...d.data(), id: d.id }) ));
         });
 
     }
@@ -90,7 +97,7 @@ class Dishes {
         const rects = this.graph.selectAll('rect').data(menuData);
 
         rects.exit().remove();
-        this.applyMenuAttributes(rects, this.y, this.x, this.graphDimensions.height)
+        this.applyMenuAttributes(rects, this.y, this.x, this.graphDimensions.height, false)
         // Now do the virtual elementes too
         const vrects = rects.enter().append('rect'); // append a rect to each enter selection
         this.applyMenuAttributes(vrects, this.y, this.x, this.graphDimensions.height);
