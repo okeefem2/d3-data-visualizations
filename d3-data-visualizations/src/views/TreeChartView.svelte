@@ -6,52 +6,34 @@
   import { startWith, map } from "rxjs/operators";
   import { activity } from "../store/activity.js";
 
-  const margin = { top: 40, right: 20, bottom: 50, left: 100 };
+  const margin = { top: 50, right: 50, bottom: 50, left: 50 };
   const chartDims = {
-    height: 400 - margin.left - margin.right,
-    width: 560 - margin.left - margin.right
+    height: 500,
+    width: 1100
   };
   let svg;
-  let arcPath;
   let graph;
-  let xScale;
-  let yScale;
-  let xAxisGroup;
-  let yAxisGroup;
-  let ordinalScale;
-  let chartLegend;
-  let legendGroup;
-  let activitiesQuery;
-  let activitySub;
-  let activitiesSub;
-  let lineGenerator;
-  let linePath;
-  let dottedLineGroup;
-  let xDottedLine;
-  let yDottedLine;
+  let stratify;
 
-  // TODO anything more specific than just showing a pie chart should be moved up and passed in
+  let tree;
+  let employeesQuery;
+  let employeesSub;
+  let rootNode;
+  let ordinalScale;
 
   onMount(() => {
-    activitiesQuery = db.collection("activities");
-    activitySub = activity.subscribe(a => {
-      const filteredActivitiesQuery = activitiesQuery.where(
-        "activity",
-        "==",
-        a
-      );
-      const activities$ = collectionData(filteredActivitiesQuery, "id").pipe(
-        startWith([]),
-        map(data =>
-          data
-            .map(d => ({ ...d, date: new Date(d.date) }))
-            .sort((a, b) => b.date - a.date)
-        )
-      );
-      activitiesSub && activitiesSub.unsubscribe();
-      activitiesSub = activities$.subscribe(activities => {
-        draw(activities);
-      });
+    employeesQuery = db.collection("employees");
+    const employees$ = collectionData(employeesQuery, "id").pipe(
+      startWith([]),
+      map(data =>
+        data
+          .map(d => ({ ...d, date: new Date(d.date) }))
+          .sort((a, b) => b.date - a.date)
+      )
+    );
+    employeesSub && employeesSub.unsubscribe();
+    employeesSub = employees$.subscribe(employees => {
+      draw(employees);
     });
 
     initChart();
@@ -66,171 +48,87 @@
       .select(".canvas")
       .append("svg")
       .attr("width", chartDims.width + margin.left + margin.right)
-      .attr("height", chartDims.height + margin.left + margin.right);
+      .attr("height", chartDims.height + margin.top + margin.bottom);
     graph = svg
       .append("g")
       .attr("width", chartDims.width)
       .attr("height", chartDims.height)
-      .attr("transform", `translate(${margin.left}, ${margin.top})`);
+      .attr("transform", `translate(${-margin.left}, ${margin.top})`);
 
-    xScale = d3.scaleTime().range([0, chartDims.width]);
-    yScale = d3.scaleLinear().range([chartDims.height, 0]);
+    stratify = d3
+      .stratify()
+      .id(d => d.name)
+      .parentId(d => d.parent);
 
-    xAxisGroup = graph
-      .append("g")
-      .attr("class", "x-axis")
-      .attr("transform", `translate(0, ${chartDims.height})`);
-    yAxisGroup = graph
-      .append("g")
-      .append("g")
-      .attr("class", "y-axis");
+    ordinalScale = d3.scaleOrdinal([
+      "#78A6B3",
+      "#7EBCCC",
+      "#FFB8CF",
+      "#FFFBD1",
+      "#B36F85",
+      "#26a69a",
+      "#A49BE8",
+      "##FFB8CF",
+      "##E8C79B",
+      "##F5FFAB"
+    ]);
 
-    // Init line paths
-    lineGenerator = d3
-      .line()
-      .x(function(d) {
-        return xScale(d.date);
-      })
-      .y(function(d) {
-        return yScale(d.time);
-      });
-    linePath = graph.append("path");
-
-    // Create a group for the dotted lines that is hidden by default
-    dottedLineGroup = graph
-      .append("g")
-      .attr("class", "dotted-line")
-      .style("opacity", 0);
-
-    // Create an x and y dotted line
-    xDottedLine = dottedLineGroup
-      .append("line")
-      .attr("stroke", "#000000")
-      .attr("stroke-width", 1)
-      .attr("stroke-dasharray", 4);
-
-    yDottedLine = dottedLineGroup
-      .append("line")
-      .attr("stroke", "#000000")
-      .attr("stroke-width", 1)
-      .attr("stroke-dasharray", 4);
+    tree = d3.tree().size([chartDims.width, chartDims.height]);
   }
 
   function draw(data) {
     console.log(data);
     if (graph) {
-      // Set scale domains
-      debugger;
-      xScale.domain(d3.extent(data, d => new Date(d.date)));
-      yScale.domain([0, d3.max(data, d => d.time)]);
+      ordinalScale.domain(data.map(d => d.department));
+      graph.selectAll(".node").remove();
+      graph.selectAll(".link").remove();
+      rootNode = stratify(data);
+      const treeData = tree(rootNode);
 
-      // Create graph points
-
-      const circles = graph.selectAll("circle").data(data);
-
-      circles.attr("cx", d => xScale(d.date)).attr("cy", d => yScale(d.time));
-
-      circles.exit().remove();
-
-      circles
+      const links = graph.selectAll(".link").data(treeData.links());
+      links
         .enter()
-        .append("circle")
-        .attr("r", 4)
-        .attr("cx", d => xScale(d.date))
-        .attr("cy", d => yScale(d.time))
-        .attr("fill", "#26a69a");
-
-      // Create actual axes
-
-      const xAxis = d3
-        .axisBottom(xScale)
-        .ticks(4)
-        .tickFormat(d3.timeFormat("%b %d"));
-      const yAxis = d3.axisLeft(yScale).ticks(4);
-
-      // Call axes to build the svg
-      xAxisGroup.call(xAxis);
-      yAxisGroup.call(yAxis);
-
-      xAxisGroup
-        .selectAll("text")
-        .attr("transform", "rotate(-40)")
-        .attr("text-anchor", "end");
-
-      // Update line path
-
-      linePath
-        .data([data])
+        .append("path")
+        .attr("class", "link")
         .attr("fill", "none")
-        .attr("stroke", "#78A6B3")
+        .attr("stroke", "#aaa")
         .attr("stroke-width", 2)
-        .attr("d", lineGenerator);
+        .attr(
+          "d",
+          d3
+            .linkVertical()
+            .x(d => d.x)
+            .y(d => d.y)
+        );
+      const nodes = graph.selectAll(".node").data(treeData.descendants());
+
+      const nodeEnter = nodes
+        .enter()
+        .append("g")
+        .attr("class", "node")
+        .attr("transform", d => `translate(${d.x}, ${d.y})`);
+      nodeEnter
+        .append("rect")
+        .attr("fill", d => ordinalScale(d.data.department))
+        .attr("stroke", "#555")
+        .attr("stroke-width", 2)
+        .attr("height", 50)
+        .attr("width", d => 20 * d.data.name.length)
+        .attr("transform", d => {
+          const xTrans = -(20 * d.data.name.length) / 2;
+          return `translate(${xTrans}, -25)`;
+        });
+
+      nodeEnter
+        .append("text")
+        .attr("text-anchor", "middle")
+        .attr("fill", "#000")
+        .text(d => d.data.name);
 
       applyEventListeners();
     }
   }
-  // Interpolate a pie wedge start angle over time (as a decimal of the animation time between 0-1) between the start and end
-  // angle of a Pie wedge (see pie function above)
-  // This will give an animation of the wedge growing from it's start
-  function tweenEnter(data) {
-    let i = d3.interpolate(data.endAngle, data.startAngle);
-    return t => {
-      data.startAngle = i(t);
-      return arcPath(data);
-    };
-  }
-
-  function tweenExit(data) {
-    let i = d3.interpolate(data.startAngle, data.endAngle);
-    return t => {
-      data.startAngle = i(t);
-      return arcPath(data);
-    };
-  }
-
-  function tweenUpdate(data) {
-    // New data that will be entered to the dom
-    // this references the path element
-    let i = d3.interpolate(this._current, data);
-    this._current = i(1); // same as data, since 1 is the end of the interpolation, and data is set to be the end
-    return t => {
-      return arcPath(i(t));
-    };
-  }
-
-  function applyEventListeners() {
-    graph
-      .selectAll("circle")
-      .on("mouseover", circleMouseOver)
-      .on("mouseleave", circleMouseOut);
-  }
-
-  const circleMouseOver = (d, i, n) => {
-    d3.select(n[i])
-      .transition(100)
-      .attr("r", 8)
-      .attr("fill", "#FFB8CF");
-
-    xDottedLine
-      .attr("x1", xScale(d.date))
-      .attr("x2", xScale(d.date))
-      .attr("y1", chartDims.height)
-      .attr("y2", yScale(d.time));
-    yDottedLine
-      .attr("x1", 0)
-      .attr("x2", xScale(d.date))
-      .attr("y1", yScale(d.time))
-      .attr("y2", yScale(d.time));
-    dottedLineGroup.style("opacity", 1);
-  };
-
-  const circleMouseOut = (d, i, n) => {
-    d3.select(n[i])
-      .transition(100)
-      .attr("r", 4)
-      .attr("fill", "#26a69a");
-    dottedLineGroup.style("opacity", 0);
-  };
+  function applyEventListeners() {}
 </script>
 
 <style>

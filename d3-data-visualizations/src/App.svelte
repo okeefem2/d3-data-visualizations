@@ -31,7 +31,7 @@
 		font-family: circe, sans-serif !important;
 	}
 
-	.btn {
+	a {
 		margin-right: 10px;
 	}
 </style>
@@ -41,9 +41,9 @@
 			D3 Visualizations With Firebase
 		</h4>
 		<ul id="nav-mobile" class="right hide-on-med-and-down">
-			<li><button class="btn" on:click={() => setComponentShown(Budget)}>Budget Tracker</button></li>
-			<li><button class="btn" on:click={() => setComponentShown(Activity)}>Activity Tracker</button></li>
-			<li><button class="btn" on:click={() => setComponentShown(Tree)}>Hierarchy Tree</button></li>
+			<li><a on:click={() => setComponentShown(Budget)}>Budget Tracker</a></li>
+			<li><a on:click={() => setComponentShown(Activity)}>Activity Tracker</a></li>
+			<li><a on:click={() => setComponentShown(Tree)}>Hierarchy Tree</a></li>
 		</ul>
 	</div>
 </nav>

@@ -12,7 +12,6 @@
     width: 560 - margin.left - margin.right
   };
   let svg;
-  let arcPath;
   let graph;
   let xScale;
   let yScale;
@@ -29,8 +28,6 @@
   let dottedLineGroup;
   let xDottedLine;
   let yDottedLine;
-
-  // TODO anything more specific than just showing a pie chart should be moved up and passed in
 
   onMount(() => {
     activitiesQuery = db.collection("activities");
@@ -66,7 +63,7 @@
       .select(".canvas")
       .append("svg")
       .attr("width", chartDims.width + margin.left + margin.right)
-      .attr("height", chartDims.height + margin.left + margin.right);
+      .attr("height", chartDims.height + margin.top + margin.bottom);
     graph = svg
       .append("g")
       .attr("width", chartDims.width)
@@ -120,7 +117,6 @@
     console.log(data);
     if (graph) {
       // Set scale domains
-      debugger;
       xScale.domain(d3.extent(data, d => new Date(d.date)));
       yScale.domain([0, d3.max(data, d => d.time)]);
 
@@ -168,34 +164,6 @@
 
       applyEventListeners();
     }
-  }
-  // Interpolate a pie wedge start angle over time (as a decimal of the animation time between 0-1) between the start and end
-  // angle of a Pie wedge (see pie function above)
-  // This will give an animation of the wedge growing from it's start
-  function tweenEnter(data) {
-    let i = d3.interpolate(data.endAngle, data.startAngle);
-    return t => {
-      data.startAngle = i(t);
-      return arcPath(data);
-    };
-  }
-
-  function tweenExit(data) {
-    let i = d3.interpolate(data.startAngle, data.endAngle);
-    return t => {
-      data.startAngle = i(t);
-      return arcPath(data);
-    };
-  }
-
-  function tweenUpdate(data) {
-    // New data that will be entered to the dom
-    // this references the path element
-    let i = d3.interpolate(this._current, data);
-    this._current = i(1); // same as data, since 1 is the end of the interpolation, and data is set to be the end
-    return t => {
-      return arcPath(i(t));
-    };
   }
 
   function applyEventListeners() {

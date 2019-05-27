@@ -3,52 +3,66 @@
   import { fade } from "svelte/transition";
   import FormBuilder from "../components/FormBuilder.svelte";
   import { onMount } from "svelte";
-
+  import "materialize-css";
   export let activity;
   let submitting = false;
   let formError;
-  let activitiesQuery;
+  let employeesQuery;
+  let modal;
 
   let formConfigs = [
     {
-      id: "time",
-      displayName: "Time Spent (minutes)",
-      type: "number",
+      id: "name",
+      displayName: "Employee Name",
+      type: "text",
       errors: [],
       validators: [
         v => {
-          if (!v || v === 0) return "Time spent required";
+          if (!v || v.trim() === "") return "Employee Name required";
         }
       ],
-      value: 0,
-      default: 0
+      value: "",
+      default: ""
     },
     {
-      id: "date",
-      displayName: "Date",
-      type: "date",
+      id: "parent",
+      displayName: "Reports to...",
+      type: "text",
+      errors: [],
+      validators: [],
+      value: "",
+      default: ""
+    },
+    {
+      id: "department",
+      displayName: "Department",
+      type: "text",
       errors: [],
       validators: [
         v => {
-          if (!v) return "Date required";
+          if (!v || v.trim() === "") return "Department required";
         }
       ],
-      value: new Date(),
-      default: new Date()
+      value: "",
+      default: ""
     }
   ];
 
   onMount(() => {
-    activitiesQuery = db.collection("activities");
+    employeesQuery = db.collection("employees");
+    modal = document.querySelector(".modal");
+    M.Modal.init(modal);
   });
 
   function saveItem(event) {
     submitting = true;
-    activitiesQuery.add({ ...event.detail, activity }).then(d => {
-      M.toast({ html: "Activity added!" });
+    employeesQuery.add({ ...event.detail }).then(d => {
+      M.toast({ html: "Employee added!" });
       setTimeout(() => (submitting = false), 1000);
 
       formConfigs = formConfigs.map(c => ({ ...c, value: c.default }));
+      const instance = M.Modal.getInstance(modal);
+      instance.close();
     });
   }
 </script>
@@ -57,14 +71,18 @@
 
 </style>
 
-<form>
-  <p class="flow-text center">
-    How much
-    <span class="teal-text">{activity}</span>
-    have you done today
-  </p>
-  <FormBuilder
-    bind:formConfigs
-    submitText={'Add Activity'}
-    on:submit={saveItem} />
-</form>
+<!-- Modal Trigger -->
+<a class="btn modal-trigger" href="#employee-form">Add Employee</a>
+
+<!-- Modal Structure -->
+<div id="employee-form" class="modal">
+  <div class="modal-content">
+    <form>
+      <h4>Employee Details</h4>
+      <FormBuilder
+        bind:formConfigs
+        submitText={'Add Employee'}
+        on:submit={saveItem} />
+    </form>
+  </div>
+</div>
