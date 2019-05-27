@@ -1,63 +1,75 @@
 <script>
-    import { db } from '../firebase';
-    import { fade } from 'svelte/transition';
+  import { db } from "../firebase";
+  import { fade } from "svelte/transition";
+  import { createEventDispatcher } from "svelte";
 
-    // { id: string, displayName: string, type: string, validators: () => string[], value: any } }
-    export let formConfigs = [];
-    let formErrors = {};
+  // { id: string, displayName: string, type: string, validators: () => string[], value: any } }
+  export let formConfigs = [];
+  export let submitText = "Submit";
+  let formErrors = {};
 
-    function validateAndSubmit() {
-        
-        console.log('Form submitted');
-        // submitting = true;
-        let formValid = false;
-        let errors = {};
-        for (let formConfig of formConfigs) {
-            errors = validate(...formConfig.validators)(formConfig.value);
-            formValid = !errors.length;
-            errors[formConfig.id] = errors;
-        }
-        formErrors = errors;
+  const dispatch = createEventDispatcher();
 
-// TODO emit event
-        if (formValid) {
-            console.log('Form is valid!');
-            // db.collection('expenses').add({ name, cost }).then(d => {
-            //     console.log(d);
-            //     M.toast({html: 'Item added!'});
-            //     setTimeout(() => submitting = false, 1000);
-                
-            //     name = '';
-            //     cost = '';
-            // });
-        }
+  function validateAndSubmit() {
+    let formValid = true;
+    let errors = {};
+    for (let formConfig of formConfigs) {
+      const validationErrors = validate(...formConfig.validators)(
+        formConfig.value
+      );
+      formValid = !validationErrors.length && formValid;
+      errors[formConfig.id] = validationErrors;
     }
-    const validate = (...validationFns) => args => validationFns.reduce((acc, fn) => ({args: acc.args, errors: [...acc.errors, fn(acc.args)]}), { args, errors: [] }).errors.filter(e => !!e);
+    formErrors = errors;
+
+    if (formValid) {
+      const formValue = formConfigs.reduce((value, config) => {
+        value[config.id] = config.value;
+        return value;
+      }, {});
+      dispatch("submit", formValue);
+    }
+  }
+  const validate = (...validationFns) => args =>
+    validationFns
+      .reduce(
+        (acc, fn) => ({
+          args: acc.args,
+          errors: [...acc.errors, fn(acc.args)]
+        }),
+        { args, errors: [] }
+      )
+      .errors.filter(e => !!e);
 </script>
 
 <style>
+
 </style>
 
-
-{#each formConfigs as config }
-    <div class="input-field">
-        <!-- todo if else on different types -->
-        <input type="text" id={config.id} bind:value={config.value}>
-        <label for={config}>{config.displayName}</label>
-        {#if formErrors[config.id]}
-            {#each formErrors[config.id] as error }
-                <span class="red-text">
-                    { error }
-                </span>
-            {/each}
-        {/if}
-    </div>
+{#each formConfigs as config}
+  <div class="input-field">
+    <!-- todo if else on different types -->
+    {#if config.type === 'text'}
+      <input type="text" id={config.id} bind:value={config.value} />
+    {:else if config.type === 'number'}
+      <input type="number" id={config.id} bind:value={config.value} />
+    {:else if config.type === 'date'}
+      <input type="date" class="datepicker" bind:value={config.value} />
+    {/if}
+    <label for={config}>{config.displayName}</label>
+    {#if formErrors[config.id]}
+      <ul>
+        {#each formErrors[config.id] as error}
+          <li class="red-text"> {error} </li>
+        {/each}
+      </ul>
+    {/if}
+  </div>
 {/each}
 
-<button class="waves-effect waves-light btn" type="button" on:click={validateAndSubmit}>
-        Add Item
+<button
+  class="waves-effect waves-light btn"
+  type="button"
+  on:click={validateAndSubmit}>
+   {submitText}
 </button>
-
-
-
-

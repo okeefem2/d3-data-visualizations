@@ -1,11 +1,14 @@
 <script>
 
-	import ChartView from './views/ChartView.svelte';
-	import ItemFormView from './views/ItemFormView.svelte';
+	import Budget from './pages/Budget.svelte';
+	import Activity from './pages/Activity.svelte';
+	import Tree from './pages/Tree.svelte';
 	export let name; // Like Input in Angular
 
-	function someFunction () {
-		console.log('hey!');
+	let componentShown = Tree;
+
+	function setComponentShown(component) {
+		componentShown = component;
 	}
 </script>
 
@@ -18,36 +21,40 @@
 
     <!-- Compiled and minified JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-	<script src="https://d3js.org/d3.v5.min.js"></script>
+	<!-- <script src="https://d3js.org/d3.v5.min.js"></script> -->
 </svelte:head>
 
 <style>
 	:global(body) {
 		margin: 0;
+		padding: 0;
 		font-family: circe, sans-serif !important;
 	}
+
+	.btn {
+		margin-right: 10px;
+	}
 </style>
-<div class="row">
-	<h4 class="left">
-		D3 Visualizations With Firebase
-	</h4>
-</div>
-	
+<nav>
+	<div class="row nav-wrapper">
+		<h4 class="left">
+			D3 Visualizations With Firebase
+		</h4>
+		<ul id="nav-mobile" class="right hide-on-med-and-down">
+			<li><button class="btn" on:click={() => setComponentShown(Budget)}>Budget Tracker</button></li>
+			<li><button class="btn" on:click={() => setComponentShown(Activity)}>Activity Tracker</button></li>
+			<li><button class="btn" on:click={() => setComponentShown(Tree)}>Hierarchy Tree</button></li>
+		</ul>
+	</div>
+</nav>
 
 <div class="container section">
-	<div class="row">
-		<div class="col s12 m6">
-			<ItemFormView/>
-		</div>
-		<div class="col s12 m5 push-m1"> <!-- push-m1 gives a one column gap on medium and up-->
-			<div class="canvas">
-				<ChartView/>
-			</div>
-		</div>
-	</div>
+    <svelte:component this="{componentShown}"/>
 </div>
-<!-- <h1>Hello {name}!</h1>
-
-<button on:click={someFunction}>Button</button> -->
 
 
+<!-- {#if componentShown === 'budget'}
+      <Budget />
+{:else if componentShown === 'Fitness'}
+      <Fitness />
+{/if} -->

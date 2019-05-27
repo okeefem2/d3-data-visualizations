@@ -7,8 +7,6 @@
 <style>
 </style>
 
-<div class="canvas">
-</div>
 
 
 
